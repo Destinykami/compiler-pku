@@ -1,0 +1,17 @@
+[package]
+name = "compiler-pku"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lazy_static = "1.4.0"
+lalrpop-util = { version = "0.19.7", features = ["lexer"] }
+
+[build-dependencies]
+lalrpop = "0.19.7"
+
+[[bin]]
+name = "compiler-pku"
+path = "src/main.rs"
