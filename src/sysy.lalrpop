@@ -1,4 +1,5 @@
 // lalrpop 里的约定
+use crate::ast::ast::*;
 grammar;
 
 // 约束 lexer 的行为
@@ -12,27 +13,33 @@ match {
 
 // 定义 CompUnit, 其返回值类型为 String
 // parser 在解析完成后的行为是返回 FuncDef 的值
-pub CompUnit: String = <func_def: FuncDef> => func_def;
+pub CompUnit: CompUnit = <func_def: FuncDef> => CompUnit {func_def};
 
 // 同上, 不解释
-FuncDef: String = {
-  <func_type: FuncType> <id: Ident> "(" ")" <block: Block> => {
-    format!("{} {}() {}", func_type, id, block)
+FuncDef: FuncDef = {
+  <return_type: Type> <func_id: Id> "(" ")" <block: Block> => {
+    FuncDef{return_type: return_type, func_id: func_id, block: block}
   }
 }
 
-FuncType: String = "int" => "int".to_string();
+Type: Type = {
+  "int" => Type{type_name: "int".to_string()}
+}
 
-Block: String = "{" <stmt: Stmt> "}" => format!("{{ {} }}", stmt);
+Block: Block = "{" <stmt: Stmt> "}" => Block{stmt: stmt};
 
-Stmt: String = "return" <num: Number> ";" => format!("return {};", num);
+Stmt: Stmt =  {
+  "return" <number: Number> ";" => Stmt{stmt: StmtEnum::ReturnStmt(number)}
+}
 
-Number: String = <num: IntConst> => num.to_string();
+Number: Number = {
+  <int_const: IntConst> => Number{number: NumberEnum::IntConst(int_const)}
+}
 
 // 如果匹配到标识符, 就返回这个字符串
 // 一对尖括号在此处指代的是正则表达式匹配到的字符串 (&str)
 // 关于尖括号到底代表什么, 请 RTFM
-Ident: String = r"[_a-zA-Z][_a-zA-Z0-9]*" => <>.to_string();
+Id: String = r"[_a-zA-Z][_a-zA-Z0-9]*" => <>.to_string();
 
 // 对整数字面量的处理方式: 把匹配到的字符串按对应进制转换成数字
 IntConst: i32 = {
