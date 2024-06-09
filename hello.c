@@ -1,4 +1,4 @@
 int main() {
   // 忽略我的存在
-  return 123;
+  return 123456;
 }

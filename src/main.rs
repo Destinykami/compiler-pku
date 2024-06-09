@@ -1,6 +1,8 @@
 
 pub mod ast;
-
+pub mod ir_builder;
+use koopa::back::KoopaGenerator;
+use ir_builder::generate_ir;
 use lalrpop_util::lalrpop_mod;
 use std::env::args;
 use std::fs::read_to_string;
@@ -17,8 +19,8 @@ fn main() -> Result<()> {
   let _mode = args.next().unwrap();
   let input = args.next().unwrap();
   args.next();
-  let _output = args.next().unwrap();
-
+  let output = args.next().unwrap();
+  //println!("{}",mode);
   // 读取输入文件
   let input = read_to_string(input)?;
 
@@ -27,5 +29,9 @@ fn main() -> Result<()> {
 
   // 输出解析得到的 AST
   println!("{:#?}", ast);
+  let ir: koopa::ir::Program = generate_ir(&ast).expect("IR builder error");
+  let mut text_generator = KoopaGenerator::new(Vec::new());
+  text_generator.generate_on(&ir).unwrap();
+  std::fs::write(output, text_generator.writer()).expect("Unable to write");
   Ok(())
 }

@@ -29,16 +29,19 @@ pub struct Type {
 }
 
 #[derive(Debug)]
+/// 代码块
 pub struct Block {
     pub stmt: Stmt,
 }
 
 #[derive(Debug)]
+/// Stmt类型
 pub enum StmtType {
     RETURN,
 }
 
 #[derive(Debug)]
+/// Stmt内容
 pub struct Stmt {
     pub stmt: StmtEnum
 }
@@ -57,4 +60,5 @@ pub struct Number {
 #[derive(Debug)]
 pub enum NumberEnum {
     IntConst(i32),
+    FloatConst(f32),
 }

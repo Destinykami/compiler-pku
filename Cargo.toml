@@ -7,11 +7,9 @@ edition = "2021"
 
 [dependencies]
 lazy_static = "1.4.0"
-lalrpop-util = { version = "0.19.7", features = ["lexer"] }
+lalrpop-util = { version = "0.20.2", features = ["lexer"] }
+koopa = "0.0.7"
 
 [build-dependencies]
-lalrpop = "0.19.7"
+lalrpop = "0.20.2"
 
-[[bin]]
-name = "compiler-pku"
-path = "src/main.rs"
