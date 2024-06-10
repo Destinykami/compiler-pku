@@ -1,4 +1,6 @@
+
 int main() {
-  // 忽略我的存在
-  return 123456;
+  // This is also a comment.
+  /*123*/
+  return 3;
 }
