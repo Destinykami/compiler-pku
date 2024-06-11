@@ -7,14 +7,14 @@ use ir_builder::Buildable;
 use koopa::ir::entities::{BasicBlock, Function}; // Koopa IR builder
 use koopa::ir::Program; // All the symbol defined in the AST
 
-pub fn generate_ir(comp_unit: &CompUnit) -> Result<Program, &str> {
+pub fn generate_ir(comp_unit: &CompUnit) -> Result<Program, String> {
     let mut program = Program::new();
     let mut my_ir_generator_info = MyIRGeneratorInfo {
         curr_block: None,
         curr_func: None,
     };
     comp_unit.build(&mut program, &mut my_ir_generator_info)?;
-    return Ok(program);
+    Ok(program)
 }
 
 pub struct MyIRGeneratorInfo {

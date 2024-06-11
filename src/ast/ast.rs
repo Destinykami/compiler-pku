@@ -35,12 +35,6 @@ pub struct Block {
 }
 
 #[derive(Debug)]
-/// Stmt类型
-pub enum StmtType {
-    RETURN,
-}
-
-#[derive(Debug)]
 /// Stmt内容
 pub struct Stmt {
     pub stmt: StmtEnum
