@@ -43,24 +43,8 @@ impl GenerateAsm for koopa::ir::FunctionData {
                                 match val.kind(){
                                     ValueKind::Integer(int)=>{
                                         asm_codes.push(format!("  li a0, {}",int.value()).to_string());
-                                    },
-                                    ValueKind::ZeroInit(_) => todo!(),
-                                    ValueKind::Undef(_) => todo!(),
-                                    ValueKind::Aggregate(_) => todo!(),
-                                    ValueKind::FuncArgRef(_) => todo!(),
-                                    ValueKind::BlockArgRef(_) => todo!(),
-                                    ValueKind::Alloc(_) => todo!(),
-                                    ValueKind::GlobalAlloc(_) => todo!(),
-                                    ValueKind::Load(_) => todo!(),
-                                    ValueKind::Store(_) => todo!(),
-                                    ValueKind::GetPtr(_) => todo!(),
-                                    ValueKind::GetElemPtr(_) => todo!(),
-                                    ValueKind::Binary(_) => todo!(),
-                                    ValueKind::Branch(_) => todo!(),
-                                    ValueKind::Jump(_) => todo!(),
-                                    ValueKind::Call(_) => todo!(),
-                                    ValueKind::Return(_) => todo!(),
-                                    
+                                    }
+                                    _=>unreachable!()
                                 }
 
                             }
