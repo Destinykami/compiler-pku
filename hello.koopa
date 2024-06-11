@@ -1,4 +1,4 @@
 fun @main(): i32 {
 %entry:
-  ret 123456
+  ret 3
 }
