@@ -1,6 +1,3 @@
-
 int main() {
-  // This is also a comment.
-  /*123*/
-  return 3;
+  return +(- -!6);  // 看起来像个颜文字
 }

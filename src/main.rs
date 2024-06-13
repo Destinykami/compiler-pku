@@ -7,7 +7,7 @@ use ir_builder::generate_ir;
 use lalrpop_util::lalrpop_mod;
 use std::env::args;
 use std::fs::read_to_string;
-use std::io::{Result,Write};
+use std::io::Result;
 // 引用 lalrpop 生成的解析器
 // 因为我们刚刚创建了 sysy.lalrpop, 所以模块名是 sysy
 lalrpop_mod!(sysy);
@@ -41,11 +41,8 @@ fn main() -> Result<()> {
       }
       "-riscv"=>{ //生成riscv汇编
         println!("now generate riscv-asm code");
-        let asm_code=asm_builder::generate_riscv_asm(&ir).expect("generate asm error");
-        let mut asm_output=std::fs::File::create(output)?;
-        for code in asm_code{
-            writeln!(asm_output,"{}",code)?;
-        }
+        let asm_output=std::fs::File::create(output)?;
+        asm_builder::generate_riscv_asm(&ir,asm_output).expect("generate asm error");
       }
       _=>unreachable!()
   }

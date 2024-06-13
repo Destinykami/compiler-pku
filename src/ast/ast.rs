@@ -9,8 +9,13 @@
 //! FuncType  ::= "int";
 //!
 //! Block     ::= "{" Stmt "}";
-//! Stmt      ::= "return" Number ";";
-//! Number    ::= INT_CONST;
+//! 文法变更
+//! Stmt        ::= "return" Exp ";";
+//! Exp         ::= UnaryExp;
+//! PrimaryExp  ::= "(" Exp ")" | Number;
+//! Number      ::= INT_CONST;
+//! UnaryExp    ::= PrimaryExp | UnaryOp UnaryExp;
+//! UnaryOp     ::= "+" | "-" | "!";
 #[derive(Debug)]
 pub struct CompUnit {
     pub func_def: FuncDef,
@@ -33,26 +38,32 @@ pub struct Type {
 pub struct Block {
     pub stmt: Stmt,
 }
-
-#[derive(Debug)]
 /// Stmt内容
-pub struct Stmt {
-    pub stmt: StmtEnum
+
+#[derive(Debug)]
+pub enum Stmt {
+    ReturnStmt(Exp),
 }
 
 #[derive(Debug)]
-pub enum StmtEnum {
-    ReturnStmt(Number),
-}
-
-#[derive(Debug)]
-pub struct Number {
-    pub number: NumberEnum
-}
-
-
-#[derive(Debug)]
-pub enum NumberEnum {
+pub enum Number {
     IntConst(i32),
-    FloatConst(f32),
+}
+
+#[derive(Debug)]
+pub enum Exp{
+    UnaryExp(UnaryExp),
+}
+#[derive(Debug)]
+pub enum UnaryExp{
+    //一元表达式
+    PrimaryExp(PrimaryExp),
+    PlusUnaryExp(Box<UnaryExp>), 
+    MinusUnaryExp(Box<UnaryExp>), 
+    NotUnaryExp(Box<UnaryExp>), 
+}
+#[derive(Debug)]
+pub enum PrimaryExp{
+    BracedExp(Box<Exp>),
+    Number(Number),
 }
