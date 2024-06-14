@@ -84,13 +84,22 @@ impl GenerateAsm for koopa::ir::FunctionData {
                             koopa::ir::BinaryOp::Lt => todo!(),
                             koopa::ir::BinaryOp::Ge => todo!(),
                             koopa::ir::BinaryOp::Le => todo!(),
-                            koopa::ir::BinaryOp::Add => todo!(),
+                            koopa::ir::BinaryOp::Add => {
+                                writeln!(asm_info.output_file,"  add   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                            },
                             koopa::ir::BinaryOp::Sub => {
                                 writeln!(asm_info.output_file,"  sub   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
-                            }
-                            koopa::ir::BinaryOp::Mul => todo!(),
-                            koopa::ir::BinaryOp::Div => todo!(),
-                            koopa::ir::BinaryOp::Mod => todo!(),
+                            },
+                            koopa::ir::BinaryOp::Mul => {
+                                writeln!(asm_info.output_file,"  mul   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                
+                            },
+                            koopa::ir::BinaryOp::Div => {
+                                writeln!(asm_info.output_file,"  div   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                            },
+                            koopa::ir::BinaryOp::Mod => {
+                                writeln!(asm_info.output_file,"  rem   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                            },
                             koopa::ir::BinaryOp::And => todo!(),
                             koopa::ir::BinaryOp::Or => todo!(),
                             koopa::ir::BinaryOp::Xor => todo!(),

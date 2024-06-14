@@ -73,7 +73,7 @@ impl Buildable for Exp {
         my_ir_generator_info: &mut MyIRGeneratorInfo,
     ) -> Result<(), String> {
         match self {
-            Exp::UnaryExp(unary_exp) => unary_exp.build(program, my_ir_generator_info),
+            Exp::AddExp(unary_exp) => unary_exp.build(program, my_ir_generator_info),
         }
     }
 }
@@ -159,7 +159,39 @@ impl Buildable for Number {
         }
     }
 }
+impl Buildable for AddExp {
+    fn build(
+            &self,
+            program: &mut Program,
+            my_ir_generator_info: &mut MyIRGeneratorInfo,
+        ) -> Result<(), String> {
+        match self{
+            AddExp::BinaryAddExp(first_exp,second_exp)=>build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Add),
+            AddExp::MulExp(exp) => {
+                exp.build(program, my_ir_generator_info)
+            },
+            AddExp::BinarySubExp(first_exp,second_exp)=>build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Sub),
 
+        }
+    }
+}
+impl Buildable for MulExp {
+    fn build(
+            &self,
+            program: &mut Program,
+            my_ir_generator_info: &mut MyIRGeneratorInfo,
+        ) -> Result<(), String> {
+        match self {
+            MulExp::UnaryExp(exp)=>{
+                exp.build(program, my_ir_generator_info)
+            }
+            MulExp::BinaryDivExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Div),
+            MulExp::BinaryMulExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Mul),
+            MulExp::BinaryModExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Mod),
+
+        }
+    }
+}
 //不懂-。-
 fn build_binary_from_buildables(
     first_exp: &dyn Buildable,
