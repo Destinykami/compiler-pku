@@ -11,13 +11,18 @@
 //! Block     ::= "{" Stmt "}";
 //! 文法变更
 //! Stmt        ::= "return" Exp ";";
-//! Exp         ::= AddExp;
+//! Exp         ::= LOrExp;
 //! PrimaryExp  ::= "(" Exp ")" | Number;
 //! Number      ::= INT_CONST;
 //! UnaryExp    ::= PrimaryExp | UnaryOp UnaryExp;
 //! UnaryOp     ::= "+" | "-" | "!";
 //! MulExp      ::= UnaryExp | MulExp ("*" | "/" | "%") UnaryExp;
 //! AddExp      ::= MulExp | AddExp ("+" | "-") MulExp;
+//! RelExp      ::= AddExp | RelExp ("<" | ">" | "<=" | ">=") AddExp;
+//! EqExp       ::= RelExp | EqExp ("==" | "!=") RelExp;
+//! LAndExp     ::= EqExp | LAndExp "&&" EqExp;
+//! LOrExp      ::= LAndExp | LOrExp "||" LAndExp;
+
 
 #[derive(Debug)]
 pub struct CompUnit {
@@ -55,7 +60,7 @@ pub enum Number {
 
 #[derive(Debug)]
 pub enum Exp{
-    AddExp(AddExp)
+    LOrExp(LOrExp)
 }
 #[derive(Debug)]
 pub enum UnaryExp{
@@ -83,4 +88,28 @@ pub enum AddExp {
     MulExp(MulExp),
     BinaryAddExp(Box<AddExp>, MulExp), 
     BinarySubExp(Box<AddExp>, MulExp), 
+}
+#[derive(Debug)]
+pub enum LOrExp {
+    LAndExp(LAndExp),
+    BinaryLOrExp(Box<LOrExp>,LAndExp),
+}
+#[derive(Debug)]
+pub enum  LAndExp {
+    EqExp(EqExp),
+    BinaryLAndExp(Box<LAndExp>,EqExp),
+}
+#[derive(Debug)]
+pub enum EqExp {
+    RelExp(RelExp),
+    BinaryEqExp(Box<EqExp>,RelExp),
+    BinaryNotEqExp(Box<EqExp>,RelExp),
+}
+#[derive(Debug)]
+pub enum RelExp {
+    AddExp(AddExp),
+    BinaryLtRelExp(Box<RelExp>,AddExp),//小于
+    BinaryGtRelExp(Box<RelExp>,AddExp),//大于
+    BinaryLeRelExp(Box<RelExp>,AddExp),//小于等于
+    BinaryGeRelExp(Box<RelExp>,AddExp),//大于等于
 }

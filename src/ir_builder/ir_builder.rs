@@ -73,7 +73,7 @@ impl Buildable for Exp {
         my_ir_generator_info: &mut MyIRGeneratorInfo,
     ) -> Result<(), String> {
         match self {
-            Exp::AddExp(unary_exp) => unary_exp.build(program, my_ir_generator_info),
+            Exp::LOrExp(lor_exp) => lor_exp.build(program, my_ir_generator_info),
         }
     }
 }
@@ -189,6 +189,58 @@ impl Buildable for MulExp {
             MulExp::BinaryMulExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Mul),
             MulExp::BinaryModExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Mod),
 
+        }
+    }
+}
+impl Buildable for RelExp {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self{
+            RelExp::AddExp(exp) => exp.build(program, my_ir_generator_info),
+            RelExp::BinaryLtRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Lt),
+            RelExp::BinaryGtRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Gt),
+            RelExp::BinaryLeRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Le),
+            RelExp::BinaryGeRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Ge),
+        }
+    }
+}
+impl Buildable for EqExp {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self{
+            EqExp::RelExp(exp) => exp.build(program, my_ir_generator_info),
+            EqExp::BinaryEqExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Eq),
+            EqExp::BinaryNotEqExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::NotEq),
+        }
+    }
+}
+impl Buildable for LAndExp {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self{
+            LAndExp::EqExp(exp) => exp.build(program, my_ir_generator_info),
+            LAndExp::BinaryLAndExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::And),
+        }
+    }
+}
+impl Buildable for LOrExp {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self{
+            LOrExp::LAndExp(exp) => exp.build(program, my_ir_generator_info),
+            LOrExp::BinaryLOrExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Or),
         }
     }
 }

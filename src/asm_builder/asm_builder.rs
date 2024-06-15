@@ -73,17 +73,33 @@ impl GenerateAsm for koopa::ir::FunctionData {
                                 //同时, 你可以自行思考: 用何种方式可以缓解这个问题. 在 Lv4 中, 我们会给出一种一劳永逸的思路来解决这个问题.
                                 writeln!(asm_info.output_file,"  xor   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                                 writeln!(asm_info.output_file,"  seqz  {},{}", REGISTER_NAMES[reg_ans],REGISTER_NAMES[reg_ans]).expect("Write error. ");
-
-                                // %0 = eq 6, 0 =>
-                                // 实现 eq 6, 0 的操作, 并把结果存入 t0
-                                //     li    t0, 6
-                                //     xor   t0, t0, x0
-                                //     seqz  t0, t0
                             }
-                            koopa::ir::BinaryOp::Gt => todo!(),
-                            koopa::ir::BinaryOp::Lt => todo!(),
-                            koopa::ir::BinaryOp::Ge => todo!(),
-                            koopa::ir::BinaryOp::Le => todo!(),
+                            koopa::ir::BinaryOp::Gt => {
+                                //sgt是一个伪指令,也就是说, 这条指令并不真实存在, 而是用其他指令实现的.
+                                //sgt t0, t1, t2 (判断 t1 的值是否大于 t2 的值) 是怎么实现的?
+                                // = slt t0,t2,t1
+                                
+                                writeln!(asm_info.output_file,"  sgt   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                writeln!(asm_info.output_file,"  snez   {},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg_ans]).expect("Write error. ");
+                                
+                            },
+                            koopa::ir::BinaryOp::Lt => {
+                                //slt t0, t1, t2 指令的含义是, 判断寄存器 t1 的值是否小于 t2 的值, 并将结果 (0 或 1) 写入 t0 寄存器. 
+                                writeln!(asm_info.output_file,"  slt   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                writeln!(asm_info.output_file,"  snez   {},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg_ans]).expect("Write error. ");
+                                
+                            },
+                            koopa::ir::BinaryOp::Ge => {
+                                //判断大于等于的原理是什么? => 判断是否小于后面，取反
+                                writeln!(asm_info.output_file,"  sgt   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                writeln!(asm_info.output_file,"  seqz   {},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg_ans]).expect("Write error. ");
+                            },
+                            koopa::ir::BinaryOp::Le => {
+                                //判断小于等于的原理是什么? => 判断是否大于后面，取反
+                                writeln!(asm_info.output_file,"  sgt   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                writeln!(asm_info.output_file,"  seqz   {},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg_ans]).expect("Write error. ");
+
+                            },
                             koopa::ir::BinaryOp::Add => {
                                 writeln!(asm_info.output_file,"  add   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                             },

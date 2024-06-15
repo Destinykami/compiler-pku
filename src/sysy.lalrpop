@@ -37,7 +37,7 @@ Number: Number = {
 }
 
 Exp:Exp = {
-  <add_exp:AddExp> =>Exp::AddExp(add_exp),
+  <lor_exp:LOrExp> =>Exp::LOrExp(lor_exp),
 }
 PrimaryExp: PrimaryExp = {
   "(" <exp:Exp> ")" => PrimaryExp::BracedExp(Box::new(exp)),
@@ -61,6 +61,29 @@ AddExp:AddExp = {
   <mul_exp:MulExp> => AddExp::MulExp(mul_exp),
   <add_exp:AddExp> "+" <mul_exp:MulExp> => AddExp::BinaryAddExp(Box::new(add_exp),mul_exp),
   <add_exp:AddExp> "-" <mul_exp:MulExp> => AddExp::BinarySubExp(Box::new(add_exp),mul_exp),
+
+}
+RelExp:RelExp ={
+  <add_exp:AddExp> => RelExp::AddExp(add_exp),
+  <rel_exp:RelExp> "<" <add_exp:AddExp> => RelExp::BinaryLtRelExp(Box::new(rel_exp),add_exp),
+  <rel_exp:RelExp> ">" <add_exp:AddExp> => RelExp::BinaryGtRelExp(Box::new(rel_exp),add_exp),
+  <rel_exp:RelExp> "<=" <add_exp:AddExp> => RelExp::BinaryLeRelExp(Box::new(rel_exp),add_exp),
+  <rel_exp:RelExp> ">=" <add_exp:AddExp> => RelExp::BinaryGeRelExp(Box::new(rel_exp),add_exp),
+
+}
+EqExp:EqExp ={
+  <rel_exp:RelExp> => EqExp::RelExp(rel_exp),
+  <eq_exp:EqExp> "==" <rel_exp:RelExp> => EqExp::BinaryEqExp(Box::new(eq_exp),rel_exp),
+  <eq_exp:EqExp> "!=" <rel_exp:RelExp> => EqExp::BinaryNotEqExp(Box::new(eq_exp),rel_exp),
+  
+}
+LAndExp:LAndExp = {
+  <eq_exp:EqExp> => LAndExp::EqExp(eq_exp),
+  <land_exp:LAndExp> "&&" <eq_exp:EqExp> => LAndExp::BinaryLAndExp(Box::new(land_exp),eq_exp),
+}
+LOrExp:LOrExp ={
+  <land_exp:LAndExp> => LOrExp::LAndExp(land_exp),
+  <lor_exp:LOrExp> "||" <land_exp:LAndExp> => LOrExp::BinaryLOrExp(Box::new(lor_exp),land_exp),
 
 }
 // 如果匹配到标识符, 就返回这个字符串
