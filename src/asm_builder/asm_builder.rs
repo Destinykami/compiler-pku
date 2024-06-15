@@ -94,7 +94,7 @@ impl GenerateAsm for koopa::ir::FunctionData {
                             },
                             koopa::ir::BinaryOp::Ge => {
                                 //判断大于等于的原理是什么? => 判断是否小于后面，取反
-                                writeln!(asm_info.output_file,"  sgt   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                writeln!(asm_info.output_file,"  slt   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                                 writeln!(asm_info.output_file,"  seqz   {},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg_ans]).expect("Write error. ");
                             },
                             koopa::ir::BinaryOp::Le => {
