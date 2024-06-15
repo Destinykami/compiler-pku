@@ -66,7 +66,10 @@ impl GenerateAsm for koopa::ir::FunctionData {
                         asm_info.free_register(reg2);  //让结果可以复用上面的寄存器
                         let reg_ans=asm_info.allocate_register(inst); //为指令的返回值分配寄存器   为什么不用get_reg?
                         match binary.op() {
-                            koopa::ir::BinaryOp::NotEq => todo!(),
+                            koopa::ir::BinaryOp::NotEq => {
+                                writeln!(asm_info.output_file,"  xor   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                writeln!(asm_info.output_file,"  snez  {},{}", REGISTER_NAMES[reg_ans],REGISTER_NAMES[reg_ans]).expect("Write error. ");
+                            },
                             koopa::ir::BinaryOp::Eq => {
                                 //你也许会注意到, 如果按照一条指令的结果占用一个临时寄存器的目标代码生成思路, 在表达式足够复杂的情况下,
                                 //所有的临时寄存器很快就会被用完. 本章出现的测试用例中会避免出现这种情况,
@@ -116,8 +119,14 @@ impl GenerateAsm for koopa::ir::FunctionData {
                             koopa::ir::BinaryOp::Mod => {
                                 writeln!(asm_info.output_file,"  rem   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                             },
-                            koopa::ir::BinaryOp::And => todo!(),
-                            koopa::ir::BinaryOp::Or => todo!(),
+                            koopa::ir::BinaryOp::And => {
+                                writeln!(asm_info.output_file,"  and   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                
+                            },
+                            koopa::ir::BinaryOp::Or => {
+                                writeln!(asm_info.output_file,"  or   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                
+                            },
                             koopa::ir::BinaryOp::Xor => todo!(),
                             koopa::ir::BinaryOp::Shl => todo!(),
                             koopa::ir::BinaryOp::Shr => todo!(),
