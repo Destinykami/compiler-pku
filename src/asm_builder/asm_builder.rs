@@ -116,8 +116,14 @@ impl GenerateAsm for koopa::ir::FunctionData {
                             koopa::ir::BinaryOp::Mod => {
                                 writeln!(asm_info.output_file,"  rem   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                             },
-                            koopa::ir::BinaryOp::And => todo!(),
-                            koopa::ir::BinaryOp::Or => todo!(),
+                            koopa::ir::BinaryOp::And => {
+                                writeln!(asm_info.output_file,"  and   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                
+                            },
+                            koopa::ir::BinaryOp::Or => {
+                                writeln!(asm_info.output_file,"  or   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
+                                
+                            },
                             koopa::ir::BinaryOp::Xor => todo!(),
                             koopa::ir::BinaryOp::Shl => todo!(),
                             koopa::ir::BinaryOp::Shr => todo!(),
