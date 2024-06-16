@@ -62,8 +62,48 @@ impl Buildable for Block {
         program: &mut Program,
         my_ir_generator_info: &mut MyIRGeneratorInfo,
     ) -> Result<(), String> {
-        self.stmt.build(program, my_ir_generator_info)?;
+        match self {
+            Block::Block(block_items) =>{
+                for stmt in block_items{
+                    stmt.build(program, my_ir_generator_info)?
+                }
+            },
+        }
         Ok(())
+    }
+}
+impl Buildable for BlockItem {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self {
+            BlockItem::Decl(decl) => decl.build(program, my_ir_generator_info),
+            BlockItem::Stmt(stmt) => stmt.build(program, my_ir_generator_info),
+        }
+    }
+}
+impl Buildable for Decl {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self{
+            Decl::ConstDecl(const_decl) => const_decl.build(program, my_ir_generator_info),
+        }
+    }
+}
+impl Buildable for ConstDecl {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self{
+            ConstDecl::ConstDecl(_, _) => todo!(),
+        }
     }
 }
 impl Buildable for Exp {
@@ -139,10 +179,21 @@ impl Buildable for PrimaryExp {
         match self {
             PrimaryExp::BracedExp(exp) => exp.build(program, my_ir_generator_info),
             PrimaryExp::Number(number) => number.build(program, my_ir_generator_info),
+            PrimaryExp::LVal(lval) => lval.build(program, my_ir_generator_info),
         }
     }
 }
-
+impl Buildable for LVal{
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self {
+            LVal::IDENT(ident) => todo!(),
+        }
+    }
+}
 impl Buildable for Number {
     fn build(
         &self,

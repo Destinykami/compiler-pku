@@ -17,19 +17,52 @@ pub CompUnit: CompUnit = <func_def: FuncDef> => CompUnit {func_def};
 
 // 同上, 不解释
 FuncDef: FuncDef = {
-  <return_type: Type> <func_id: Id> "(" ")" <block: Block> => {
+  <return_type: BType> <func_id: Id> "(" ")" <block: Block> => {
     FuncDef{return_type: return_type, func_id: func_id, block: block}
   }
 }
 
-Type: Type = {
-  "int" => Type{type_name: "int".to_string()}
+BType: BType = {
+  "int" => BType{type_name: "int".to_string()}
 }
 
-Block: Block = "{" <stmt: Stmt> "}" => Block{stmt: stmt};
+Decl: Decl ={
+  <const_decl:ConstDecl> => Decl::ConstDecl(const_decl),
+}
 
+ConstDecl: ConstDecl = "const" <type_name: BType> <c: ConstDef> <cs: ("," <ConstDef>)*> ";" => {
+  let mut vec = Vec::<ConstDef>::new();
+  vec.push(c);
+  for cc in cs {
+    vec.push(cc);
+  }
+  ConstDecl::ConstDecl(type_name, vec)
+};
+
+ConstDef: ConstDef = {
+  <ident:IDENT> "=" <const_initval:ConstInitVal> => ConstDef::Default(ident,const_initval),
+}
+ConstInitVal: ConstInitVal ={
+  <const_exp:ConstExp> => ConstInitVal::ConstExp(const_exp),
+}
+
+ConstExp: ConstExp ={
+  <exp:Exp> => ConstExp::Exp(exp),
+}
+
+LVal: LVal={
+  <ident:IDENT> => LVal::IDENT(ident),
+}
+
+Block: Block = "{" <block_items: (BlockItem)*> "}" => Block::Block(block_items);
+
+BlockItem : BlockItem ={
+  <decl:Decl> => BlockItem::Decl(decl),
+  <stmt:Stmt> => BlockItem::Stmt(stmt),
+}
 Stmt: Stmt =  {
-  "return" <exp: Exp> ";" => Stmt::ReturnStmt(exp)
+  "return" <exp: Exp> ";" => Stmt::ReturnStmt(exp),
+  //<lval:LVal> "=" <exp:Exp> => Stmt::AssignStmt(lval,exp),
 }
 
 Number: Number = {
@@ -42,6 +75,7 @@ Exp:Exp = {
 PrimaryExp: PrimaryExp = {
   "(" <exp:Exp> ")" => PrimaryExp::BracedExp(Box::new(exp)),
   <number:Number> => PrimaryExp::Number(number),
+  <lval:LVal> => PrimaryExp::LVal(lval),
 }
 
 UnaryExp: UnaryExp = {
@@ -97,3 +131,5 @@ IntConst: i32 = {
   r"0[0-7]*" => i32::from_str_radix(<>, 8).unwrap(),
   r"0[xX][0-9a-fA-F]+" => i32::from_str_radix(&<>[2..], 16).unwrap(),
 }
+
+IDENT: IDENT = r"[_a-zA-Z][_a-zA-Z0-9]*" => IDENT{content: <>.to_string()};
