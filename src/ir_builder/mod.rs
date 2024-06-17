@@ -2,7 +2,7 @@
 //! It converts the C code into Koopa IR.
 
 mod ir_builder;
-use crate::ast::ast::*;
+use crate::ast::statements::*;
 use ir_builder::Buildable;
 use koopa::ir::entities::{BasicBlock, Function}; // Koopa IR builder
 use koopa::ir::{Program, Value}; // All the symbol defined in the AST

@@ -1,5 +1,7 @@
 // lalrpop 里的约定
-use crate::ast::ast::*;
+use crate::ast::exp::*;
+use crate::ast::statements::*;
+
 grammar;
 
 // 约束 lexer 的行为

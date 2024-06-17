@@ -1,6 +1,6 @@
 //! Build a single component into Koopa IR.
 
-use crate::ast::ast::*;
+use crate::ast::{exp::*, statements::*};
 use koopa::ir::{builder_traits::*, FunctionData, Program, Type};
 
 use super::MyIRGeneratorInfo;
