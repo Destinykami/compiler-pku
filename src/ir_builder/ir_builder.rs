@@ -95,6 +95,46 @@ impl Buildable for Decl {
         }
     }
 }
+impl Buildable for ConstDef {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self {
+            ConstDef::Default(ident, const_initval) => {
+                const_initval.build(program, my_ir_generator_info)?;
+                my_ir_generator_info.curr_symbols.insert(ident.content.clone(), my_ir_generator_info.curr_value);
+
+            },
+        }
+        Ok(())
+    }
+}
+impl Buildable for ConstInitVal {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self {
+            ConstInitVal::ConstExp(exp) => {
+                exp.build(program, my_ir_generator_info)
+            },
+        }
+    }
+}
+impl Buildable for ConstExp {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self{
+            ConstExp::Exp(exp) => exp.build(program, my_ir_generator_info),
+        }
+    }
+}
 impl Buildable for ConstDecl {
     fn build(
         &self,
@@ -102,7 +142,13 @@ impl Buildable for ConstDecl {
         my_ir_generator_info: &mut MyIRGeneratorInfo,
     ) -> Result<(), String> {
         match self{
-            ConstDecl::ConstDecl(_, _) => todo!(),
+            ConstDecl::ConstDecl(type_name, insides_def) => {
+                //const int a=1,b=1;
+                for inside in insides_def{
+                    inside.build(program, my_ir_generator_info);
+                }
+                Ok(())
+            },
         }
     }
 }
@@ -190,8 +236,14 @@ impl Buildable for LVal{
         my_ir_generator_info: &mut MyIRGeneratorInfo,
     ) -> Result<(), String> {
         match self {
-            LVal::IDENT(ident) => todo!(),
+            //在遇到 LVal 时, 你应该从符号表中查询这个符号的值, 然后用查到的结果作为常量求值/IR 生成的结果
+            LVal::IDENT(ident) => {
+                let curr_symbol_value=my_ir_generator_info.curr_symbols.get(&ident.content).unwrap();
+                my_ir_generator_info.curr_value=*curr_symbol_value;
+            },
         }
+        println!("qwq");
+        Ok(())
     }
 }
 impl Buildable for Number {
