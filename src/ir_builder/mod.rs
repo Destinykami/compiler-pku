@@ -16,6 +16,7 @@ pub fn generate_ir(comp_unit: &CompUnit) -> Result<Program, String> {
         curr_func: None,
         curr_value:None,
         curr_symbols:HashMap::new(),
+        curr_type:None,
     };
     comp_unit.build(&mut program, &mut my_ir_generator_info)?;
     println!("{:#?}",my_ir_generator_info.curr_symbols);
@@ -26,5 +27,18 @@ pub struct MyIRGeneratorInfo {
     curr_block: Option<BasicBlock>, // Current block
     curr_func: Option<Function>,    // Current function
     curr_value:Option<Value>,       // Current return Value
-    curr_symbols:HashMap<String,Option<Value>>, //符号表
+    curr_symbols:HashMap<String,SymbolsEntry>, //符号表
+    curr_type:Option<Typekind>,
+}
+#[derive(Debug)]
+//符号表的类型 const/var
+pub struct SymbolsEntry{
+    value:Option<Value>,
+    typekind: Option<Typekind>,
+}
+//类型
+#[derive(Clone, Copy,PartialEq,Debug)]
+pub enum Typekind {
+    Const,
+    Variable,
 }

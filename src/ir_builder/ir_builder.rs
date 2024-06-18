@@ -2,7 +2,7 @@
 
 use crate::ast::{exp::*, statements::*};
 use koopa::ir::{builder_traits::*, FunctionData, Program, Type};
-
+use crate::ir_builder::Typekind::*;
 use super::MyIRGeneratorInfo;
 
 pub trait Buildable {
@@ -92,6 +92,7 @@ impl Buildable for Decl {
     ) -> Result<(), String> {
         match self{
             Decl::ConstDecl(const_decl) => const_decl.build(program, my_ir_generator_info),
+            Decl::VarDecl(var_decl) => var_decl.build(program, my_ir_generator_info),
         }
     }
 }
@@ -102,9 +103,9 @@ impl Buildable for ConstDef {
         my_ir_generator_info: &mut MyIRGeneratorInfo,
     ) -> Result<(), String> {
         match self {
-            ConstDef::Default(ident, const_initval) => {
+            ConstDef::ConstDef(ident, const_initval) => {
                 const_initval.build(program, my_ir_generator_info)?;
-                my_ir_generator_info.curr_symbols.insert(ident.content.clone(), my_ir_generator_info.curr_value);
+                my_ir_generator_info.curr_symbols.insert(ident.content.clone(), super::SymbolsEntry { value: (my_ir_generator_info.curr_value), typekind: Some(Const)});
 
             },
         }
@@ -147,8 +148,56 @@ impl Buildable for ConstDecl {
                 for inside in insides_def{
                     inside.build(program, my_ir_generator_info);
                 }
-                Ok(())
             },
+        }
+        Ok(())
+    }
+}
+impl Buildable for VarDecl {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self {
+            VarDecl::VarDecl(type_name, insides_def) => {
+                for inside in insides_def{
+                    inside.build(program, my_ir_generator_info);
+                }
+            },
+        }
+        Ok(())
+    }
+}
+impl Buildable for VarDef {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self{
+            VarDef::VarDef(ident, initval) => {
+                //定义变量的同时定义值
+                initval.build(program, my_ir_generator_info)?;
+                my_ir_generator_info.curr_symbols.insert(ident.content.clone(), super::SymbolsEntry { value: (my_ir_generator_info.curr_value), typekind: Some(Variable) });
+            },
+            VarDef::IDENT(ident) => {
+                //定义变量，但不定义初始值
+                todo!();
+                //my_ir_generator_info.curr_symbols.insert(ident.content.clone(), Some(Value(0)));
+            },
+        }
+        Ok(())
+    }
+}
+impl Buildable for InitVal {
+    fn build(
+        &self,
+        program: &mut Program,
+        my_ir_generator_info: &mut MyIRGeneratorInfo,
+    ) -> Result<(), String> {
+        match self{
+            InitVal::Exp(exp) => exp.build(program, my_ir_generator_info),
         }
     }
 }
@@ -212,6 +261,19 @@ impl Buildable for Stmt {
                     .insts_mut()
                     .extend([return_stmt]);
             }
+            Stmt::AssignStmt(lval, exp) => {
+                //为变量赋值,如果左侧为常量则报错
+                lval.build(program, my_ir_generator_info)?;
+                let lval_kind=my_ir_generator_info.curr_type;
+                if lval_kind==Some(Const){
+                    println!("Const cannot be assigned!");
+                    unreachable!();
+                }
+                else{
+                    exp.build(program, my_ir_generator_info)?;
+
+                }
+            },
         }
         Ok(())
     }
@@ -238,8 +300,9 @@ impl Buildable for LVal{
         match self {
             //在遇到 LVal 时, 你应该从符号表中查询这个符号的值, 然后用查到的结果作为常量求值/IR 生成的结果
             LVal::IDENT(ident) => {
-                let curr_symbol_value=my_ir_generator_info.curr_symbols.get(&ident.content).unwrap();
-                my_ir_generator_info.curr_value=*curr_symbol_value;
+                let curr_symbol_entry=my_ir_generator_info.curr_symbols.get(&ident.content).unwrap();
+                my_ir_generator_info.curr_value=curr_symbol_entry.value;
+                my_ir_generator_info.curr_type=curr_symbol_entry.typekind;
             },
         }
         println!("qwq");

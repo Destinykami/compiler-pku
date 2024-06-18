@@ -30,6 +30,7 @@ BType: BType = {
 
 Decl: Decl ={
   <const_decl:ConstDecl> => Decl::ConstDecl(const_decl),
+  <var_decl:VarDecl> => Decl::VarDecl(var_decl),
 }
 
 ConstDecl: ConstDecl = "const" <type_name: BType> <c: ConstDef> <cs: ("," <ConstDef>)*> ";" => {
@@ -42,7 +43,7 @@ ConstDecl: ConstDecl = "const" <type_name: BType> <c: ConstDef> <cs: ("," <Const
 };
 
 ConstDef: ConstDef = {
-  <ident:IDENT> "=" <const_initval:ConstInitVal> => ConstDef::Default(ident,const_initval),
+  <ident:IDENT> "=" <const_initval:ConstInitVal> => ConstDef::ConstDef(ident,const_initval),
 }
 ConstInitVal: ConstInitVal ={
   <const_exp:ConstExp> => ConstInitVal::ConstExp(const_exp),
@@ -50,6 +51,22 @@ ConstInitVal: ConstInitVal ={
 
 ConstExp: ConstExp ={
   <exp:Exp> => ConstExp::Exp(exp),
+}
+
+VarDecl: VarDecl = <type_name: BType> <c: VarDef> <cs: ("," <VarDef>)*> ";" => {
+  let mut vec = Vec::<VarDef>::new();
+  vec.push(c);
+  for cc in cs {
+    vec.push(cc);
+  }
+  VarDecl::VarDecl(type_name, vec)
+};
+
+VarDef: VarDef = {
+  <ident:IDENT> "=" <var_initval:InitVal> => VarDef::VarDef(ident,var_initval),
+}
+InitVal:InitVal ={
+  <exp:Exp> => InitVal::Exp(exp),
 }
 
 LVal: LVal={
@@ -64,7 +81,7 @@ BlockItem : BlockItem ={
 }
 Stmt: Stmt =  {
   "return" <exp: Exp> ";" => Stmt::ReturnStmt(exp),
-  //<lval:LVal> "=" <exp:Exp> => Stmt::AssignStmt(lval,exp),
+  <lval:LVal> "=" <exp:Exp> ";" => Stmt::AssignStmt(lval,exp),
 }
 
 Number: Number = {

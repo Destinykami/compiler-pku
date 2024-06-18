@@ -21,6 +21,7 @@ pub struct BType {
 #[derive(Debug)]
 pub enum Decl{
     ConstDecl(ConstDecl), 
+    VarDecl(VarDecl),
 }
 #[derive(Debug)]
 pub enum ConstDecl{
@@ -28,7 +29,7 @@ pub enum ConstDecl{
 }
 #[derive(Debug)]
 pub enum ConstDef {
-    Default(IDENT, ConstInitVal),
+    ConstDef(IDENT, ConstInitVal),
 }
 #[derive(Debug)]
 pub struct IDENT {
@@ -48,6 +49,19 @@ pub enum LVal {
     IDENT(IDENT),
 }
 #[derive(Debug)]
+pub enum VarDecl{
+    VarDecl(BType,Vec<VarDef>),
+}
+#[derive(Debug)]
+pub enum VarDef {
+    VarDef(IDENT, InitVal),
+    IDENT(IDENT),
+}
+#[derive(Debug)]
+pub enum InitVal {
+    Exp(Exp),
+}
+#[derive(Debug)]
 /// 代码块
 pub enum Block {
     Block(Vec<BlockItem>),
@@ -61,7 +75,7 @@ pub enum BlockItem{
 #[derive(Debug)]
 pub enum Stmt {
     ReturnStmt(Exp),
-    //AssignStmt(LVal,Exp),
+    AssignStmt(LVal,Exp),
 }
 
 #[derive(Debug)]
