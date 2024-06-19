@@ -1,6 +1,6 @@
 //遍历内存形式的IR,解析得到汇编代码
 
-use koopa::ir::{FunctionData, Value, ValueKind};
+use koopa::ir::{BinaryOp, FunctionData, Value, ValueKind};
 
 use crate::asm_builder::REGISTER_NAMES;
 
@@ -66,18 +66,18 @@ impl GenerateAsm for koopa::ir::FunctionData {
                         asm_info.free_register(reg2);  //让结果可以复用上面的寄存器
                         let reg_ans=asm_info.allocate_register(inst); //为指令的返回值分配寄存器   为什么不用get_reg?
                         match binary.op() {
-                            koopa::ir::BinaryOp::NotEq => {
+                            BinaryOp::NotEq => {
                                 writeln!(asm_info.output_file,"  xor   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                                 writeln!(asm_info.output_file,"  snez  {},{}", REGISTER_NAMES[reg_ans],REGISTER_NAMES[reg_ans]).expect("Write error. ");
                             },
-                            koopa::ir::BinaryOp::Eq => {
+                            BinaryOp::Eq => {
                                 //你也许会注意到, 如果按照一条指令的结果占用一个临时寄存器的目标代码生成思路, 在表达式足够复杂的情况下,
                                 //所有的临时寄存器很快就会被用完. 本章出现的测试用例中会避免出现这种情况,
                                 //同时, 你可以自行思考: 用何种方式可以缓解这个问题. 在 Lv4 中, 我们会给出一种一劳永逸的思路来解决这个问题.
                                 writeln!(asm_info.output_file,"  xor   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                                 writeln!(asm_info.output_file,"  seqz  {},{}", REGISTER_NAMES[reg_ans],REGISTER_NAMES[reg_ans]).expect("Write error. ");
                             }
-                            koopa::ir::BinaryOp::Gt => {
+                            BinaryOp::Gt => {
                                 //sgt是一个伪指令,也就是说, 这条指令并不真实存在, 而是用其他指令实现的.
                                 //sgt t0, t1, t2 (判断 t1 的值是否大于 t2 的值) 是怎么实现的?
                                 // = slt t0,t2,t1
@@ -86,51 +86,51 @@ impl GenerateAsm for koopa::ir::FunctionData {
                                 writeln!(asm_info.output_file,"  snez   {},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg_ans]).expect("Write error. ");
                                 
                             },
-                            koopa::ir::BinaryOp::Lt => {
+                            BinaryOp::Lt => {
                                 //slt t0, t1, t2 指令的含义是, 判断寄存器 t1 的值是否小于 t2 的值, 并将结果 (0 或 1) 写入 t0 寄存器. 
                                 writeln!(asm_info.output_file,"  slt   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                                 writeln!(asm_info.output_file,"  snez   {},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg_ans]).expect("Write error. ");
                                 
                             },
-                            koopa::ir::BinaryOp::Ge => {
+                            BinaryOp::Ge => {
                                 //判断大于等于的原理是什么? => 判断是否小于后面，取反
                                 writeln!(asm_info.output_file,"  slt   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                                 writeln!(asm_info.output_file,"  seqz   {},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg_ans]).expect("Write error. ");
                             },
-                            koopa::ir::BinaryOp::Le => {
+                            BinaryOp::Le => {
                                 //判断小于等于的原理是什么? => 判断是否大于后面，取反
                                 writeln!(asm_info.output_file,"  sgt   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                                 writeln!(asm_info.output_file,"  seqz   {},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg_ans]).expect("Write error. ");
 
                             },
-                            koopa::ir::BinaryOp::Add => {
+                            BinaryOp::Add => {
                                 writeln!(asm_info.output_file,"  add   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                             },
-                            koopa::ir::BinaryOp::Sub => {
+                            BinaryOp::Sub => {
                                 writeln!(asm_info.output_file,"  sub   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                             },
-                            koopa::ir::BinaryOp::Mul => {
+                            BinaryOp::Mul => {
                                 writeln!(asm_info.output_file,"  mul   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                                 
                             },
-                            koopa::ir::BinaryOp::Div => {
+                            BinaryOp::Div => {
                                 writeln!(asm_info.output_file,"  div   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                             },
-                            koopa::ir::BinaryOp::Mod => {
+                            BinaryOp::Mod => {
                                 writeln!(asm_info.output_file,"  rem   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                             },
-                            koopa::ir::BinaryOp::And => {
+                            BinaryOp::And => {
                                 writeln!(asm_info.output_file,"  and   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                                 
                             },
-                            koopa::ir::BinaryOp::Or => {
+                            BinaryOp::Or => {
                                 writeln!(asm_info.output_file,"  or   {},{},{}",REGISTER_NAMES[reg_ans], REGISTER_NAMES[reg1],REGISTER_NAMES[reg2]).expect("Write error. ");
                                 
                             },
-                            koopa::ir::BinaryOp::Xor => todo!(),
-                            koopa::ir::BinaryOp::Shl => todo!(),
-                            koopa::ir::BinaryOp::Shr => todo!(),
-                            koopa::ir::BinaryOp::Sar => todo!(),
+                            BinaryOp::Xor => todo!(),
+                            BinaryOp::Shl => todo!(),
+                            BinaryOp::Shr => todo!(),
+                            BinaryOp::Sar => todo!(),
                         }
                     }
                     // 其他种类暂时遇不到

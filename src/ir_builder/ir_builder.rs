@@ -1,7 +1,7 @@
 //! Build a single component into Koopa IR.
 
 use crate::ast::{exp::*, statements::*};
-use koopa::ir::{builder_traits::*, FunctionData, Program, Type};
+use koopa::ir::{builder_traits::*, BinaryOp, FunctionData, Program, Type};
 use crate::ir_builder::Typekind::*;
 use super::MyIRGeneratorInfo;
 
@@ -105,7 +105,12 @@ impl Buildable for ConstDef {
         match self {
             ConstDef::ConstDef(ident, const_initval) => {
                 const_initval.build(program, my_ir_generator_info)?;
-                my_ir_generator_info.curr_symbols.insert(ident.content.clone(), super::SymbolsEntry { value: (my_ir_generator_info.curr_value), typekind: Some(Const)});
+                let (ans,_) =my_ir_generator_info.tmp_constants.unwrap();
+                my_ir_generator_info.tmp_constants=None;
+                my_ir_generator_info.curr_symbols.insert(
+                    ident.content.clone(), 
+                    super::SymbolsEntry::Const(Const, ans)
+                );
 
             },
         }
@@ -143,10 +148,12 @@ impl Buildable for ConstDecl {
         my_ir_generator_info: &mut MyIRGeneratorInfo,
     ) -> Result<(), String> {
         match self{
-            ConstDecl::ConstDecl(type_name, insides_def) => {
+            ConstDecl::ConstDecl(type_name, const_defs) => {
                 //const int a=1,b=1;
-                for inside in insides_def{
-                    inside.build(program, my_ir_generator_info);
+                for const_def in const_defs{
+                    //开始进行常量计算
+                    my_ir_generator_info.tmp_constants=Some((520,1314));
+                    const_def.build(program, my_ir_generator_info)?
                 }
             },
         }
@@ -179,7 +186,9 @@ impl Buildable for VarDef {
             VarDef::VarDef(ident, initval) => {
                 //定义变量的同时定义值
                 initval.build(program, my_ir_generator_info)?;
-                my_ir_generator_info.curr_symbols.insert(ident.content.clone(), super::SymbolsEntry { value: (my_ir_generator_info.curr_value), typekind: Some(Variable) });
+                my_ir_generator_info.curr_symbols.insert(
+                    ident.content.clone(), 
+                    super::SymbolsEntry::Variable(Variable, my_ir_generator_info.curr_value));
             },
             VarDef::IDENT(ident) => {
                 //定义变量，但不定义初始值
@@ -228,15 +237,14 @@ impl Buildable for UnaryExp {
                 &**unary_exp,   //what can i say
                 program,
                 my_ir_generator_info,
-                koopa::ir::BinaryOp::Sub,
+                BinaryOp::Sub,
             ),
             UnaryExp::NotUnaryExp(unary_exp) => build_binary_from_buildables(
                 &**unary_exp,
                 &Number::IntConst(0),
-
                 program,
                 my_ir_generator_info,
-                koopa::ir::BinaryOp::Eq,
+                BinaryOp::Eq,
             ),
         }
     }
@@ -299,14 +307,25 @@ impl Buildable for LVal{
     ) -> Result<(), String> {
         match self {
             //在遇到 LVal 时, 你应该从符号表中查询这个符号的值, 然后用查到的结果作为常量求值/IR 生成的结果
-            LVal::IDENT(ident) => {
-                let curr_symbol_entry=my_ir_generator_info.curr_symbols.get(&ident.content).unwrap();
-                my_ir_generator_info.curr_value=curr_symbol_entry.value;
-                my_ir_generator_info.curr_type=curr_symbol_entry.typekind;
+            LVal::IDENT(ident) => 
+                match my_ir_generator_info.curr_symbols.get(&ident.content).unwrap() {
+                    crate::ir_builder::SymbolsEntry::Variable(_, _) => todo!(),
+                    crate::ir_builder::SymbolsEntry::Const(type_name, val) => {
+                        if let Some(_) =my_ir_generator_info.tmp_constants{
+                            my_ir_generator_info.tmp_constants=Some((*val,123456));
+                            return Ok(());
+                        }
+                        my_ir_generator_info.curr_value=Some(
+                            program
+                                .func_mut(my_ir_generator_info.curr_func.unwrap())
+                                .dfg_mut()
+                                .new_value()
+                                .integer(*val),
+                        );
+                        return Ok(());
+                    },
             },
         }
-        println!("qwq");
-        Ok(())
     }
 }
 impl Buildable for Number {
@@ -317,6 +336,11 @@ impl Buildable for Number {
     ) -> Result<(), String> {
         match self {
             Number::IntConst(int) => {
+                if let Some(_) = my_ir_generator_info.tmp_constants {
+                    // Calculating constant expression
+                    my_ir_generator_info.tmp_constants = Some((*int, 233333));
+                    return Ok(());
+                }
                 let curr_func_data = program.func_mut(my_ir_generator_info.curr_func.unwrap());
                 my_ir_generator_info.curr_value =
                     Some(curr_func_data.dfg_mut().new_value().integer(*int));
@@ -332,11 +356,11 @@ impl Buildable for AddExp {
             my_ir_generator_info: &mut MyIRGeneratorInfo,
         ) -> Result<(), String> {
         match self{
-            AddExp::BinaryAddExp(first_exp,second_exp)=>build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Add),
+            AddExp::BinaryAddExp(first_exp,second_exp)=>build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::Add),
             AddExp::MulExp(exp) => {
                 exp.build(program, my_ir_generator_info)
             },
-            AddExp::BinarySubExp(first_exp,second_exp)=>build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Sub),
+            AddExp::BinarySubExp(first_exp,second_exp)=>build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::Sub),
 
         }
     }
@@ -351,9 +375,9 @@ impl Buildable for MulExp {
             MulExp::UnaryExp(exp)=>{
                 exp.build(program, my_ir_generator_info)
             }
-            MulExp::BinaryDivExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Div),
-            MulExp::BinaryMulExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Mul),
-            MulExp::BinaryModExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Mod),
+            MulExp::BinaryDivExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::Div),
+            MulExp::BinaryMulExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::Mul),
+            MulExp::BinaryModExp(first_exp,second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::Mod),
 
         }
     }
@@ -366,10 +390,10 @@ impl Buildable for RelExp {
     ) -> Result<(), String> {
         match self{
             RelExp::AddExp(exp) => exp.build(program, my_ir_generator_info),
-            RelExp::BinaryLtRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Lt),
-            RelExp::BinaryGtRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Gt),
-            RelExp::BinaryLeRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Le),
-            RelExp::BinaryGeRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Ge),
+            RelExp::BinaryLtRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::Lt),
+            RelExp::BinaryGtRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::Gt),
+            RelExp::BinaryLeRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::Le),
+            RelExp::BinaryGeRelExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::Ge),
         }
     }
 }
@@ -381,8 +405,8 @@ impl Buildable for EqExp {
     ) -> Result<(), String> {
         match self{
             EqExp::RelExp(exp) => exp.build(program, my_ir_generator_info),
-            EqExp::BinaryEqExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::Eq),
-            EqExp::BinaryNotEqExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, koopa::ir::BinaryOp::NotEq),
+            EqExp::BinaryEqExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::Eq),
+            EqExp::BinaryNotEqExp(first_exp, second_exp) => build_binary_from_buildables(&**first_exp, second_exp, program, my_ir_generator_info, BinaryOp::NotEq),
         }
     }
 }
@@ -400,27 +424,33 @@ impl Buildable for LAndExp {
                     &Number::IntConst(0),
                     program,
                     my_ir_generator_info,
-                    koopa::ir::BinaryOp::NotEq,
+                    BinaryOp::NotEq,
                 )?;
-                let bool1 = my_ir_generator_info
-                    .curr_value
-                    .expect("No curr_value. Should not happen. ");
+                let mut tmp1 = 0;
+                if let Some((tmp, _)) = my_ir_generator_info.tmp_constants {
+                    // Calculating constant expression
+                    tmp1 = tmp;
+                }
+                let bool1 = my_ir_generator_info.curr_value;
                 build_binary_from_buildables(
                     &Number::IntConst(0),
                     second_exp,
                     program,
                     my_ir_generator_info,
-                    koopa::ir::BinaryOp::NotEq,
+                    BinaryOp::NotEq,
                 )?;
-                let bool2 = my_ir_generator_info
-                    .curr_value
-                    .expect("No curr_value. Should not happen. ");
+                if let Some((tmp2, _)) = my_ir_generator_info.tmp_constants {
+                    // Calculating constant expression
+                    my_ir_generator_info.tmp_constants = Some((tmp1, tmp2));
+                }
+                let bool2 = my_ir_generator_info.curr_value;
+
                 build_binary_from_values(
                     bool1,
                     bool2,
                     program,
                     my_ir_generator_info,
-                    koopa::ir::BinaryOp::And,
+                    BinaryOp::And,
                 )
             }
         }
@@ -440,27 +470,34 @@ impl Buildable for LOrExp {
                     &Number::IntConst(0),
                     program,
                     my_ir_generator_info,
-                    koopa::ir::BinaryOp::NotEq,
+                    BinaryOp::NotEq,
                 )?;
-                let bool1 = my_ir_generator_info
-                    .curr_value
-                    .expect("No curr_value. Should not happen. ");
+                let mut tmp1 = 0;
+                if let Some((tmp, _)) = my_ir_generator_info.tmp_constants {
+                    // Calculating constant expression
+                    tmp1 = tmp;
+                }
+                let bool1 = my_ir_generator_info.curr_value;
+
                 build_binary_from_buildables(
                     &Number::IntConst(0),
                     second_exp,
                     program,
                     my_ir_generator_info,
-                    koopa::ir::BinaryOp::NotEq,
+                    BinaryOp::NotEq,
                 )?;
-                let bool2 = my_ir_generator_info
-                    .curr_value
-                    .expect("No curr_value. Should not happen. ");
+                if let Some((tmp2, _)) = my_ir_generator_info.tmp_constants {
+                    // Calculating constant expression
+                    my_ir_generator_info.tmp_constants = Some((tmp1, tmp2));
+                }
+                let bool2 = my_ir_generator_info.curr_value;
+
                 build_binary_from_values(
                     bool1,
                     bool2,
                     program,
                     my_ir_generator_info,
-                    koopa::ir::BinaryOp::Or,
+                    BinaryOp::Or,
                 )
             }
         }
@@ -474,14 +511,21 @@ fn build_binary_from_buildables(
     my_ir_generator_info: &mut MyIRGeneratorInfo,
     binary_op: koopa::ir::BinaryOp,
 ) -> Result<(), String> {
+    let mut tmp1=0;
     first_exp.build(program, my_ir_generator_info)?;
     let first_value = my_ir_generator_info
-        .curr_value
-        .expect("No curr_value. Should not happen. ");
+        .curr_value;
+    if let Some((tmp, _)) = my_ir_generator_info.tmp_constants {
+        // Calculating constant expression
+        tmp1 = tmp;
+    }
     second_exp.build(program, my_ir_generator_info)?;
     let second_value = my_ir_generator_info
-        .curr_value
-        .expect("No curr_value. Should not happen. ");
+        .curr_value;
+    if let Some((tmp2, _)) = my_ir_generator_info.tmp_constants {
+        // Calculating constant expression
+        my_ir_generator_info.tmp_constants = Some((tmp1, tmp2));
+    }
     build_binary_from_values(
         first_value,
         second_value,
@@ -493,18 +537,73 @@ fn build_binary_from_buildables(
 
 //用二元表达式表示一元表达式
 fn build_binary_from_values(
-    first_value: koopa::ir::Value,
-    second_value: koopa::ir::Value,
+    first_value: Option<koopa::ir::Value>,
+    second_value: Option<koopa::ir::Value>,
     program: &mut Program,
     my_ir_generator_info: &mut MyIRGeneratorInfo,
     binary_op: koopa::ir::BinaryOp,
 ) -> Result<(), String> {
+    if let Some((tmp1, tmp2)) = my_ir_generator_info.tmp_constants {
+        // Calculating constant expression
+        match binary_op {
+            BinaryOp::NotEq => {
+                my_ir_generator_info.tmp_constants = Some(((tmp1 != tmp2) as i32, 233333))
+            }
+            BinaryOp::Eq => {
+                my_ir_generator_info.tmp_constants = Some(((tmp1 == tmp2) as i32, 233333))
+            }
+            BinaryOp::Gt => {
+                my_ir_generator_info.tmp_constants = Some(((tmp1 > tmp2) as i32, 233333))
+            }
+            BinaryOp::Lt => {
+                my_ir_generator_info.tmp_constants = Some(((tmp1 < tmp2) as i32, 233333))
+            }
+            BinaryOp::Ge => {
+                my_ir_generator_info.tmp_constants = Some(((tmp1 >= tmp2) as i32, 233333))
+            }
+            BinaryOp::Le => {
+                my_ir_generator_info.tmp_constants = Some(((tmp1 <= tmp2) as i32, 233333))
+            }
+            BinaryOp::Add => {
+                my_ir_generator_info.tmp_constants = Some((tmp1 + tmp2, 233333))
+            }
+            BinaryOp::Sub => {
+                my_ir_generator_info.tmp_constants = Some((tmp1 - tmp2, 233333))
+            }
+            BinaryOp::Mul => {
+                my_ir_generator_info.tmp_constants = Some((tmp1 * tmp2, 233333))
+            }
+            BinaryOp::Div => {
+                my_ir_generator_info.tmp_constants = Some((tmp1 / tmp2, 233333))
+            }
+            BinaryOp::Mod => {
+                my_ir_generator_info.tmp_constants = Some((tmp1 % tmp2, 233333))
+            }
+            BinaryOp::And => {
+                my_ir_generator_info.tmp_constants = Some((tmp1 & tmp2, 233333))
+            }
+            BinaryOp::Or => {
+                my_ir_generator_info.tmp_constants = Some((tmp1 | tmp2, 233333))
+            }
+            BinaryOp::Xor => {
+                my_ir_generator_info.tmp_constants = Some((tmp1 ^ tmp2, 233333))
+            }
+            BinaryOp::Shl => {
+                my_ir_generator_info.tmp_constants = Some((tmp1 << tmp2, 233333))
+            }
+            BinaryOp::Shr => todo!(), // SysY has no left shift or right shift.
+            BinaryOp::Sar => {
+                my_ir_generator_info.tmp_constants = Some((tmp1 >> tmp2, 233333))
+            }
+        }
+        return Ok(());
+    }
     let curr_func_data = program.func_mut(my_ir_generator_info.curr_func.unwrap());
     let new_value =
         curr_func_data
             .dfg_mut()
             .new_value()
-            .binary(binary_op, first_value, second_value);
+            .binary(binary_op, first_value.unwrap(), second_value.unwrap());
     curr_func_data
         .layout_mut()
         .bb_mut(my_ir_generator_info.curr_block.unwrap())
