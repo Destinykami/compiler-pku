@@ -298,10 +298,11 @@ impl Buildable for Stmt {
                 let LVal::IDENT(ident)=lval;
                 match my_ir_generator_info.curr_symbols.get(&ident.content).unwrap(){
                     super::SymbolsEntry::Variable(_, _) => {
-                        return Err(format!("Left Value should not exist in const expression! "));
+                        //do nothing  continue
+                        
                     },
                     super::SymbolsEntry::Const(_, _) => {
-                        //do nothing  continue
+                        return Err(format!("Left Value should not exist in const expression! "));
                     },
                 }
                 lval.build(program, my_ir_generator_info)?;
