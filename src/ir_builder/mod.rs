@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use crate::ast::statements::*;
 use ir_builder::Buildable;
 use koopa::ir::entities::{BasicBlock, Function}; // Koopa IR builder
-use koopa::ir::{Program, Value}; // All the symbol defined in the AST
+use koopa::ir::{Program, Value,TypeKind}; // All the symbol defined in the AST
 
 pub fn generate_ir(comp_unit: &CompUnit) -> Result<Program, String> {
     let mut program = Program::new();
@@ -29,18 +29,19 @@ pub struct MyIRGeneratorInfo {
     curr_func: Option<Function>,    // Current function
     curr_value:Option<Value>,       // Current return Value
     curr_symbols:HashMap<String,SymbolsEntry>, //符号表
-    curr_type:Option<Typekind>,
+    curr_type:Option<TypeKind>,
     tmp_constants: Option<(i32, i32)>, // Temporary constant
 }
-#[derive(Debug)]
-//符号表的类型 const/var
+
 pub enum SymbolsEntry{
-    Variable(Typekind,Option<Value>),
-    Const(Typekind,i32),
+    Variable(TypeKind,Option<Value>),
+    Const(TypeKind,i32),
 }
-//类型
-#[derive(Clone, Copy,PartialEq,Debug)]
-pub enum Typekind {
-    Const,
-    Variable,
+impl std::fmt::Debug for SymbolsEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SymbolsEntry::Variable(tk, v) => write!(f, "Variable {}: {:?}", tk, v),
+            SymbolsEntry::Const(tk, v) => write!(f, "Constant {}: {:?}", tk, v),
+        }
+    }
 }

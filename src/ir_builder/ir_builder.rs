@@ -2,7 +2,6 @@
 
 use crate::ast::{exp::*, statements::*};
 use koopa::ir::{builder_traits::*, BinaryOp, FunctionData, Program, Type};
-use crate::ir_builder::Typekind::*;
 use super::MyIRGeneratorInfo;
 
 pub trait Buildable {
@@ -109,7 +108,7 @@ impl Buildable for ConstDef {
                 my_ir_generator_info.tmp_constants=None;
                 my_ir_generator_info.curr_symbols.insert(
                     ident.content.clone(), 
-                    super::SymbolsEntry::Const(Const, ans)
+                    super::SymbolsEntry::Const(koopa::ir::TypeKind::Int32, ans)
                 );
 
             },
@@ -186,14 +185,40 @@ impl Buildable for VarDef {
             VarDef::VarDef(ident, initval) => {
                 //定义变量的同时定义值
                 initval.build(program, my_ir_generator_info)?;
+                let curr_func_data = program.func_mut(my_ir_generator_info.curr_func.unwrap());
+                let var_ptr =
+                    curr_func_data
+                        .dfg_mut()
+                        .new_value()
+                        .alloc(Type::get(koopa::ir::TypeKind::Int32));
+                curr_func_data.dfg_mut().set_value_name(var_ptr, Some(format!("@{}",ident.content)));
+                let store_inst=curr_func_data.dfg_mut().new_value().store(my_ir_generator_info.curr_value.unwrap(), var_ptr);
                 my_ir_generator_info.curr_symbols.insert(
                     ident.content.clone(), 
-                    super::SymbolsEntry::Variable(Variable, my_ir_generator_info.curr_value));
+                    super::SymbolsEntry::Variable(koopa::ir::TypeKind::Int32, Some(var_ptr)));
+                curr_func_data
+                    .layout_mut()
+                    .bb_mut(my_ir_generator_info.curr_block.unwrap())
+                    .insts_mut()
+                    .extend([var_ptr,store_inst])
             },
             VarDef::IDENT(ident) => {
                 //定义变量，但不定义初始值
-                todo!();
-                //my_ir_generator_info.curr_symbols.insert(ident.content.clone(), Some(Value(0)));
+                let curr_func_data = program.func_mut(my_ir_generator_info.curr_func.unwrap());
+                let var_ptr =
+                    curr_func_data
+                        .dfg_mut()
+                        .new_value()
+                        .alloc(Type::get(koopa::ir::TypeKind::Int32));
+                curr_func_data.dfg_mut().set_value_name(var_ptr, Some(format!("@{}",ident.content)));
+                my_ir_generator_info.curr_symbols.insert(
+                    ident.content.clone(), 
+                    super::SymbolsEntry::Variable(koopa::ir::TypeKind::Int32, Some(var_ptr)));
+                curr_func_data
+                    .layout_mut()
+                    .bb_mut(my_ir_generator_info.curr_block.unwrap())
+                    .insts_mut()
+                    .extend([var_ptr])
             },
         }
         Ok(())
@@ -270,17 +295,29 @@ impl Buildable for Stmt {
                     .extend([return_stmt]);
             }
             Stmt::AssignStmt(lval, exp) => {
-                //为变量赋值,如果左侧为常量则报错
+                let LVal::IDENT(ident)=lval;
+                match my_ir_generator_info.curr_symbols.get(&ident.content).unwrap(){
+                    super::SymbolsEntry::Variable(_, _) => {
+                        return Err(format!("Left Value should not exist in const expression! "));
+                    },
+                    super::SymbolsEntry::Const(_, _) => {
+                        //do nothing  continue
+                    },
+                }
                 lval.build(program, my_ir_generator_info)?;
-                let lval_kind=my_ir_generator_info.curr_type;
-                if lval_kind==Some(Const){
-                    println!("Const cannot be assigned!");
-                    unreachable!();
-                }
-                else{
-                    exp.build(program, my_ir_generator_info)?;
-
-                }
+                let lval_ptr = my_ir_generator_info.curr_value.unwrap();
+                // Build RHS value.
+                exp.build(program, my_ir_generator_info)?;
+                let rhs_value = my_ir_generator_info.curr_value.unwrap();
+                // Assign the RHS value into the new variable.
+                let curr_func_data = program.func_mut(my_ir_generator_info.curr_func.unwrap());
+                let dfg = curr_func_data.dfg_mut();
+                let store_inst = dfg.new_value().store(rhs_value, lval_ptr);
+                curr_func_data
+                    .layout_mut()
+                    .bb_mut(my_ir_generator_info.curr_block.unwrap())
+                    .insts_mut()
+                    .extend([lval_ptr, store_inst]);
             },
         }
         Ok(())
@@ -295,7 +332,27 @@ impl Buildable for PrimaryExp {
         match self {
             PrimaryExp::BracedExp(exp) => exp.build(program, my_ir_generator_info),
             PrimaryExp::Number(number) => number.build(program, my_ir_generator_info),
-            PrimaryExp::LVal(lval) => lval.build(program, my_ir_generator_info),
+            PrimaryExp::LVal(lval) =>  {
+                let LVal::IDENT(ident)=lval;
+                match my_ir_generator_info.curr_symbols.get(&ident.content).unwrap() {
+                    super::SymbolsEntry::Variable(_, _) => {
+                        lval.build(program, my_ir_generator_info)?;
+                        let ptr=my_ir_generator_info.curr_value.unwrap();
+                        let curr_func_data =
+                            program.func_mut(my_ir_generator_info.curr_func.unwrap());
+                        let dfg = curr_func_data.dfg_mut();
+                        let load_inst = dfg.new_value().load(ptr);
+                        my_ir_generator_info.curr_value = Some(load_inst);
+                        curr_func_data
+                            .layout_mut()
+                            .bb_mut(my_ir_generator_info.curr_block.unwrap())
+                            .insts_mut()
+                            .extend([load_inst]);
+                        Ok(())
+                    },
+                    super::SymbolsEntry::Const(_, _) => lval.build(program, my_ir_generator_info),
+                }
+            }
         }
     }
 }
@@ -309,7 +366,15 @@ impl Buildable for LVal{
             //在遇到 LVal 时, 你应该从符号表中查询这个符号的值, 然后用查到的结果作为常量求值/IR 生成的结果
             LVal::IDENT(ident) => 
                 match my_ir_generator_info.curr_symbols.get(&ident.content).unwrap() {
-                    crate::ir_builder::SymbolsEntry::Variable(_, _) => todo!(),
+                    crate::ir_builder::SymbolsEntry::Variable(type_name, ptr) => {
+                        if let Some(_) = my_ir_generator_info.tmp_constants {
+                            // Calculating constant expression
+                            return Err(format!("Left Value should not exist in const expression! "));
+                        }
+                        // Don't load it right now, because it may be used as a pointer.
+                        my_ir_generator_info.curr_value = *ptr;
+                        Ok(())
+                    },
                     crate::ir_builder::SymbolsEntry::Const(type_name, val) => {
                         if let Some(_) =my_ir_generator_info.tmp_constants{
                             my_ir_generator_info.tmp_constants=Some((*val,123456));

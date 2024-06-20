@@ -64,6 +64,7 @@ VarDecl: VarDecl = <type_name: BType> <c: VarDef> <cs: ("," <VarDef>)*> ";" => {
 
 VarDef: VarDef = {
   <ident:IDENT> "=" <var_initval:InitVal> => VarDef::VarDef(ident,var_initval),
+  <ident:IDENT> => VarDef::IDENT(ident),
 }
 InitVal:InitVal ={
   <exp:Exp> => InitVal::Exp(exp),
